@@ -20,5 +20,5 @@ setup(
     url='http://github.com/mbr/sshkeys',
     license='MIT',
     packages=find_packages(exclude=['tests']),
-    install_requires=[],
+    install_requires=['six'],
 )

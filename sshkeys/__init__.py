@@ -3,6 +3,8 @@ from base64 import b64decode, b64encode
 from hashlib import md5
 from struct import unpack
 
+from six import byte2int
+
 
 def iter_prefixed(data):
     while data:
@@ -34,9 +36,9 @@ class Key(object):
     @property
     def type(self):
         if not self._type:
-            self._type = iter_prefixed(self.data).next()
+            self._type = next(iter_prefixed(self.data))
 
-        return self._type
+        return self._type.decode('ascii')
 
     @property
     def fingerprint(self):
@@ -46,7 +48,7 @@ class Key(object):
 
     @property
     def readable_fingerprint(self):
-        h = hexlify(self.fingerprint)
+        h = hexlify(self.fingerprint).decode()
         return ':'.join(h[i:i+2] for i in range(0, len(h), 2))
 
     @classmethod
@@ -59,13 +61,13 @@ class Key(object):
         type_str, data64, comment = fields
         data = b64decode(data64)
 
-        key_type = iter_prefixed(data).next()
+        key_type = next(iter_prefixed(data))
 
-        if key_type == 'ssh-rsa':
+        if key_type == b'ssh-rsa':
             key_class = RSAKey
-        elif key_type == 'ssh-dss':
+        elif key_type == b'ssh-dss':
             key_class = DSAKey
-        elif key_type.startswith('ecdsa-'):
+        elif key_type.startswith(b'ecdsa-'):
             key_class = ECDSAKey
         else:
             raise ValueError('Unknown key type {}'.format(key_type))
@@ -80,11 +82,11 @@ class Key(object):
         return cls.from_pubkey_line(open(file).read())
 
     def to_pubkey_line(self):
-        return '{} {} {}'.format(
+        return ' '.join([
             self.type,
-            b64encode(self.data),
+            b64encode(self.data).decode('ascii'),
             self.comment,
-        )
+        ])
 
 
 class RSAKey(Key):
@@ -96,7 +98,7 @@ class RSAKey(Key):
 
         # the first bit is the sign and should always be 0
         # all bits below the highest non-0 bit are part of the modulus
-        tmp = ord(n[0])
+        tmp = byte2int(n)
         while tmp:
             tmp >>= 1
             l += 1
@@ -112,6 +114,6 @@ class ECDSAKey(Key):
     @property
     def length(self):
         type, curve, data = [p for p in iter_prefixed(self.data)]
-        if not curve.startswith('nistp'):
+        if not curve.startswith(b'nistp'):
             raise NotImplementedError('Cannot determine length of curve')
         return int(curve[5:])
