@@ -61,6 +61,7 @@ class Key(object):
 
         key_class = {
             'ssh-rsa': RSAKey,
+            'ssh-dss': DSAKey,
         }[iter_prefixed(data).next()]
 
         return key_class(b64decode(data64), comment)
@@ -88,3 +89,7 @@ class RSAKey(Key):
             l += 1
 
         return l
+
+
+class DSAKey(Key):
+    length = 1024

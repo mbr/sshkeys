@@ -49,6 +49,16 @@ KNOWN_KEYS = [
      'fingerprint': _bin_fp('99:53:07:1a:03:1e:52:c3:25:08:5d:7e:df:ee:86:37'),
      'readable_fp': '99:53:07:1a:03:1e:52:c3:25:08:5d:7e:df:ee:86:37',
      },
+     # DSA keys (always 1024 bit)
+    {'keyfile': os.path.join(base_path, 'sample_dsa.key'),
+     'pubfile': os.path.join(base_path, 'sample_dsa.key.pub'),
+     'length': 1024,
+     'type': 'ssh-dss',
+     'comment': 'sample_dsa_key@host',
+     'fingerprint': _bin_fp('c5:37:9e:1a:8b:1a:25:09:44:ec:8e:cb:85:ab:95:7a'),
+     'readable_fp': 'c5:37:9e:1a:8b:1a:25:09:44:ec:8e:cb:85:ab:95:7a',
+     },
+
 ]
 
 
