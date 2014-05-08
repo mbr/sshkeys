@@ -50,7 +50,7 @@ class Key(object):
         return ':'.join(h[i:i+2] for i in range(0, len(h), 2))
 
     @classmethod
-    def from_line(cls, line):
+    def from_pubkey_line(cls, line):
         fields = line.split()
         if not len(fields) == 3:
             raise ValueError('Could not parse key, expected 3 fields, got {}'
@@ -77,7 +77,7 @@ class Key(object):
         if hasattr(file, 'read'):
             return cls.from_pubkey_line(file.read())
 
-        return cls.from_line(open(file).read())
+        return cls.from_pubkey_line(open(file).read())
 
 
 class RSAKey(Key):

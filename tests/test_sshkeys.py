@@ -92,6 +92,17 @@ def known_key(request):
 
 
 def test_pubkey_loading_from_line(known_key):
+    line = open(known_key['pubfile']).readlines()[0]
+    k = Key.from_pubkey_line(line)
+
+    assert k.type == known_key['type']
+    assert k.length == known_key['length']
+    assert k.comment == known_key['comment']
+    assert k.fingerprint == known_key['fingerprint']
+    assert k.readable_fingerprint == known_key['readable_fp']
+
+
+def test_pubkey_loading_from_file(known_key):
     k = Key.from_pubkey_file(known_key['pubfile'])
 
     assert k.type == known_key['type']
