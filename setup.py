@@ -13,7 +13,7 @@ def read(fname):
 setup(
     name='sshkeys',
     version='0.2dev',
-    description='A library for working with (public) SSH keys.',
+    description='A library for working with public SSH keys.',
     long_description=read('README.rst'),
     author='Marc Brinkmann',
     author_email='git@marcbrinkmann.de',
