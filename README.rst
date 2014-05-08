@@ -9,6 +9,7 @@ information from them and possibly outputting them again. It's mainly useful
 when dealing with scripts that manipulate ``~/.ssh/authorized_keys`` or handle
 user's public keys in other ways.
 
+sshkeys supports Python 2.6, 2.7, 3.3, 3.4.
 
 Example
 =======
