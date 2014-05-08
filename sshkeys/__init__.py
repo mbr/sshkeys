@@ -1,5 +1,5 @@
 from binascii import hexlify
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from hashlib import md5
 from struct import unpack
 
@@ -78,6 +78,13 @@ class Key(object):
             return cls.from_pubkey_line(file.read())
 
         return cls.from_pubkey_line(open(file).read())
+
+    def to_pubkey_line(self):
+        return '{} {} {}'.format(
+            self.type,
+            b64encode(self.data),
+            self.comment,
+        )
 
 
 class RSAKey(Key):
