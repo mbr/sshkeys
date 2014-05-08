@@ -49,7 +49,7 @@ KNOWN_KEYS = [
      'fingerprint': _bin_fp('99:53:07:1a:03:1e:52:c3:25:08:5d:7e:df:ee:86:37'),
      'readable_fp': '99:53:07:1a:03:1e:52:c3:25:08:5d:7e:df:ee:86:37',
      },
-     # DSA keys (always 1024 bit)
+    # DSA keys (always 1024 bit)
     {'keyfile': os.path.join(base_path, 'sample_dsa.key'),
      'pubfile': os.path.join(base_path, 'sample_dsa.key.pub'),
      'length': 1024,
@@ -58,7 +58,31 @@ KNOWN_KEYS = [
      'fingerprint': _bin_fp('c5:37:9e:1a:8b:1a:25:09:44:ec:8e:cb:85:ab:95:7a'),
      'readable_fp': 'c5:37:9e:1a:8b:1a:25:09:44:ec:8e:cb:85:ab:95:7a',
      },
-
+    # ECDSA keys come in 3 sizes currently (256, 384, 521)
+    {'keyfile': os.path.join(base_path, 'sample_ecdsa256.key'),
+     'pubfile': os.path.join(base_path, 'sample_ecdsa256.key.pub'),
+     'length': 256,
+     'type': 'ecdsa-sha2-nistp256',
+     'comment': 'sample_ecdsa256_key@host',
+     'fingerprint': _bin_fp('70:52:5e:2d:11:73:00:dc:4f:43:f7:3d:96:8e:f6:0c'),
+     'readable_fp': '70:52:5e:2d:11:73:00:dc:4f:43:f7:3d:96:8e:f6:0c',
+     },
+    {'keyfile': os.path.join(base_path, 'sample_ecdsa384.key'),
+     'pubfile': os.path.join(base_path, 'sample_ecdsa384.key.pub'),
+     'length': 384,
+     'type': 'ecdsa-sha2-nistp384',
+     'comment': 'sample_ecdsa384_key@host',
+     'fingerprint': _bin_fp('bb:d0:47:64:b3:79:5b:d0:4f:7d:8c:2f:b6:33:33:3b'),
+     'readable_fp': 'bb:d0:47:64:b3:79:5b:d0:4f:7d:8c:2f:b6:33:33:3b',
+     },
+    {'keyfile': os.path.join(base_path, 'sample_ecdsa521.key'),
+     'pubfile': os.path.join(base_path, 'sample_ecdsa521.key.pub'),
+     'length': 521,
+     'type': 'ecdsa-sha2-nistp521',
+     'comment': 'sample_ecdsa521_key@host',
+     'fingerprint': _bin_fp('f1:25:0a:f6:be:f7:ec:9d:58:bd:b1:ba:5e:6d:08:df'),
+     'readable_fp': 'f1:25:0a:f6:be:f7:ec:9d:58:bd:b1:ba:5e:6d:08:df',
+     },
 ]
 
 

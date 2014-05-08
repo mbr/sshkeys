@@ -59,10 +59,16 @@ class Key(object):
         type_str, data64, comment = fields
         data = b64decode(data64)
 
-        key_class = {
-            'ssh-rsa': RSAKey,
-            'ssh-dss': DSAKey,
-        }[iter_prefixed(data).next()]
+        key_type = iter_prefixed(data).next()
+
+        if key_type == 'ssh-rsa':
+            key_class = RSAKey
+        elif key_type == 'ssh-dss':
+            key_class = DSAKey
+        elif key_type.startswith('ecdsa-'):
+            key_class = ECDSAKey
+        else:
+            raise ValueError('Unknown key type {}'.format(key_type))
 
         return key_class(b64decode(data64), comment)
 
@@ -93,3 +99,12 @@ class RSAKey(Key):
 
 class DSAKey(Key):
     length = 1024
+
+
+class ECDSAKey(Key):
+    @property
+    def length(self):
+        type, curve, data = [p for p in iter_prefixed(self.data)]
+        if not curve.startswith('nistp'):
+            raise NotImplementedError('Cannot determine length of curve')
+        return int(curve[5:])
