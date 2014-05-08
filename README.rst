@@ -1,6 +1,9 @@
 sshkeys
 =======
 
+.. image:: https://travis-ci.org/mbr/sshkeys.svg?branch=master
+   :target: https://travis-ci.org/mbr/sshkeys
+
 ``sshkeys`` is a small library for reading SSH public keys, extracting some
 information from them and possibly outputting them again. It's mainly useful
 when dealing with scripts that manipulate ``~/.ssh/authorized_keys`` or handle
