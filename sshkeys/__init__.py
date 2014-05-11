@@ -15,7 +15,7 @@ def iter_prefixed(data):
 
 
 class Key(object):
-    def __init__(self, data, comment):
+    def __init__(self, data, comment=None):
         self.data = data
         self.comment = comment
 
@@ -54,11 +54,20 @@ class Key(object):
     @classmethod
     def from_pubkey_line(cls, line):
         fields = line.split()
-        if not len(fields) == 3:
-            raise ValueError('Could not parse key, expected 3 fields, got {}'
+        if len(fields) > 3:
+            raise ValueError('Could not parse key, too many fields({}).'
                              .format(len(fields)))
 
-        type_str, data64, comment = fields
+        if len(fields) < 2:
+            raise ValueError('Could not parse key, too few fields({}).'
+                             .format(len(fields)))
+
+        if len(fields) == 3:
+            type_str, data64, comment = fields
+        else:
+            type_str, data64 = fields
+            comment = None
+
         data = b64decode(data64)
 
         key_type = next(iter_prefixed(data))
@@ -82,11 +91,12 @@ class Key(object):
         return cls.from_pubkey_line(open(file).read())
 
     def to_pubkey_line(self):
-        return ' '.join([
-            self.type,
-            b64encode(self.data).decode('ascii'),
-            self.comment,
-        ])
+        fields = [self.type, b64encode(self.data).decode('ascii')]
+
+        if self.comment is not None:
+            fields.append(self.comment)
+
+        return ' '.join(fields)
 
 
 class RSAKey(Key):
