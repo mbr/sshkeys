@@ -1,4 +1,5 @@
 from binascii import unhexlify
+from collections import OrderedDict
 import os
 
 from sshkeys import Key
@@ -170,3 +171,30 @@ def test_pubkey_line_without_comment():
     assert k.fingerprint == _bin_fp(
         'b9:e2:58:1a:74:fc:62:13:52:ad:f7:28:0b:09:91:54'
     )
+
+
+def test_pubkey_line_with_options_and_comment():
+    keyline = ('command="cmd 12",no-x11-forwarding '
+               'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDDN2n2kt99/aYpPbOZRJeGV'
+               'yFs74R1/QCqN351cuXLGK93lalDyIuIiUvMEYezregae1xDWXtCD+q9HMQpfl'
+               '62R2R1h3b8CMX8fpcGGXHJAxFWg/Sz8qXcbOeTRKdnBIWlUrkDi/7hWKZdXLs'
+               'iSPJeX9wmLhA5HCdHye1yFlGxSixTVK2fXyS9ZFEbBcIL8Aiq2EMQktCy2gDO'
+               'iJArpCF7pvsGqiLUxdCpOT+wuL+oGV47yVveGt9TcesnmZ1HxESXAIS22Vo2M'
+               'nTABxdNxNrs1ih3+4wdJ+gpoLo0lRNdjARRlcoH/fJvrXdbOrf//ARzuR9JKf'
+               'yKz+9aUEPxGtlEStbVysTjY2M3+Z4msbxh4x3ezpujhzpFCeLDHcAPg/HS6Go'
+               'O7zGcdJ8knCZK5ujOvFku03Es+jLrGNjACDOlLSYf9RHPqHvo/Fn+lCLJWZoc'
+               '0qiuICuHbEDU0fJ4qbVovZtdQtTwzQ8Az+VsLhJfehhadvb5hOCw3o4i9j1dJ'
+               'zcNfKJiBhab25GdfEYE097fDoYu/M0mi14AHWR0KI9o9Fd526x9B6c6gfljbH'
+               'JZcMGXhzfyO6nIsbZK6teJR7qh/8EQ7shOyfdcJkexvsbeNm12VTW34ar+Fjr'
+               'ApgN1QtY1+/6SDNSeOQqnBu2qENQVllSCfxOholMnVpO5ly1G2Q== cmt')
+
+    k = Key.from_pubkey_line(keyline)
+    assert k.fingerprint == _bin_fp(
+        'b9:e2:58:1a:74:fc:62:13:52:ad:f7:28:0b:09:91:54'
+    )
+    opts = OrderedDict([('command', 'cmd 12'), ('no-x11-forwarding', True)])
+    assert k.comment == 'cmt'
+    assert k.options == opts
+
+    # reserializtion
+    assert keyline == k.to_pubkey_line()

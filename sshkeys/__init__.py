@@ -1,6 +1,8 @@
 from binascii import hexlify
 from base64 import b64decode, b64encode
+from collections import OrderedDict
 from hashlib import md5
+import re
 from struct import unpack
 
 from six import byte2int
@@ -15,9 +17,10 @@ def iter_prefixed(data):
 
 
 class Key(object):
-    def __init__(self, data, comment=None):
+    def __init__(self, data, comment=None, options=None):
         self.data = data
         self.comment = comment
+        self.options = options or OrderedDict()
 
     @property
     def data(self):
@@ -53,8 +56,27 @@ class Key(object):
 
     @classmethod
     def from_pubkey_line(cls, line):
-        fields = line.split()
-        if len(fields) > 3:
+        quoted = False
+        fields = []
+        start = 0
+        line = line.strip()
+        for i, c in enumerate(line):
+            if quoted:
+                if c == '"':
+                    quoted = False
+                continue
+
+            if c == '"':
+                quoted = True
+                continue
+
+            if c == ' ':
+                fields.append(line[start:i])
+                start = i+1
+
+        fields.append(line[start:])
+
+        if len(fields) > 4:
             raise ValueError('Could not parse key, too many fields({}).'
                              .format(len(fields)))
 
@@ -62,14 +84,22 @@ class Key(object):
             raise ValueError('Could not parse key, too few fields({}).'
                              .format(len(fields)))
 
-        if len(fields) == 3:
-            type_str, data64, comment = fields
-        else:
+        opt_str = None
+        comment = None
+        if len(fields) == 2:
             type_str, data64 = fields
-            comment = None
+        elif len(fields) == 4:
+            opt_str, type_str, data64, comment = fields
+        if len(fields) == 3:
+            # we could be missing options or the comment
+            # try to decode base64 data from either the 2nd or 3rd field
+            if fields[1].startswith('ssh-') or fields[1].startswith('ecdsa'):
+                # 2nd field is type string, there's a comment preprepended
+                opt_str, type_str, data64 = fields
+            else:
+                type_str, data64, comment = fields
 
         data = b64decode(data64)
-
         key_type = next(iter_prefixed(data))
 
         if key_type == b'ssh-rsa':
@@ -81,7 +111,20 @@ class Key(object):
         else:
             raise ValueError('Unknown key type {}'.format(key_type))
 
-        return key_class(b64decode(data64), comment)
+        # parse options
+        PAIR_RE = re.compile(r'([A-Za-z0-9-]+)(="[^"]*"|[^"\s,])?,')
+
+        options = OrderedDict()
+        if opt_str:
+            for k, v in PAIR_RE.findall(opt_str + ','):
+                if not v.startswith('='):
+                    options[k] = True
+                elif v.startswith('="'):
+                    options[k] = v[2:-1]
+                else:
+                    options[k] = v[1:]
+
+        return key_class(b64decode(data64), comment, options=options)
 
     @classmethod
     def from_pubkey_file(cls, file):
@@ -92,6 +135,11 @@ class Key(object):
 
     def to_pubkey_line(self):
         fields = [self.type, b64encode(self.data).decode('ascii')]
+
+        if self.options:
+            buf = [k if v is True else '{}="{}"'.format(k, v)
+                   for k, v in self.options.items()]
+            fields.insert(0, ','.join(buf))
 
         if self.comment is not None:
             fields.append(self.comment)
