@@ -129,7 +129,10 @@ class Key(object):
     @classmethod
     def from_pubkey_line(cls, line):
         options, key_without_options = cls._extract_options(line)
-        fields = key_without_options.strip().split(maxsplit=2)
+        # the key (with options stripped out) consists of the fields
+        # "type", "data", and optionally "comment", separated by a space.
+        # The comment field may contain additional spaces
+        fields = key_without_options.strip().split(None, 2) # maxsplit=2
         if len(fields) == 2:
             type_str, data64 = fields
             comment = None
