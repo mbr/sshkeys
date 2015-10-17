@@ -54,50 +54,90 @@ class Key(object):
         h = hexlify(self.fingerprint).decode()
         return ':'.join(h[i:i+2] for i in range(0, len(h), 2))
 
+    @staticmethod
+    def _extract_options(line):
+        r'''Given a line as it would appear in the authorized_keys file,
+        return an OrderedDict of options, and the remainder of a line as a
+        string.
+
+        >>> Key._extract_options(r'no-pty,command="sh" ssh-rsa AAAAB3NzaC1yc2EAAA...OFy5Lwc8Lo+Jk=')
+        (OrderedDict([('no-pty', True), ('command', 'sh')]), 'ssh-rsa AAAAB3NzaC1yc2EAAA...OFy5Lwc8Lo+Jk=')
+        >>> Key._extract_options(r'ssh-rsa AAAAB3NzaC1yc...Lwc8OFy5Lo+kU=')
+        (OrderedDict(), 'ssh-rsa AAAAB3NzaC1yc...Lwc8OFy5Lo+kU=')
+        '''
+        options = OrderedDict({})
+        quoted = False
+        escaped = False
+        option_name = ''
+        option_val = None
+        key_without_options = ''
+        in_options = True
+        in_option_name = True
+        for letter in line.strip():
+            if in_options:
+                if quoted:
+                    if letter == "\\":
+                        escaped = True
+                    elif letter == '"':
+                        if escaped:
+                            option_val += letter
+                            escaped = False
+                        else:
+                            quoted = False
+                    else:
+                        option_val += letter
+                else: # not quoted
+                    if letter == ' ':
+                        # end of options
+                        in_options = False
+                        if (option_name in ['ssh-rsa', 'ssh-dss']
+                        or option_name.startswith('ecdsa-')):
+                            # what we thought was an option name was really the
+                            # key type, and there are no options
+                            key_without_options = option_name + " "
+                            option_name = ''
+                        else:
+                            if option_val is None:
+                                options[option_name] = True
+                            else:
+                                options[option_name] = option_val
+                    elif letter == '"':
+                        quoted = True
+                    elif letter == '=':
+                        # '=' separated option name from value
+                        in_option_name = False
+                        if option_val is None:
+                            option_val = ''
+                    elif letter == ',':
+                        # next option_name
+                        if option_val is None:
+                            options[option_name] = True
+                        else:
+                            options[option_name] = option_val
+                        in_option_name = True
+                        option_name = ''
+                        option_val = None
+                    else: # general unquoted letter
+                        if in_option_name:
+                            option_name += letter
+                        else:
+                            option_val += letter
+            else:
+                key_without_options += letter
+        return options, key_without_options
+
     @classmethod
     def from_pubkey_line(cls, line):
-        quoted = False
-        fields = []
-        start = 0
-        line = line.strip()
-        for i, c in enumerate(line):
-            if quoted:
-                if c == '"':
-                    quoted = False
-                continue
-
-            if c == '"':
-                quoted = True
-                continue
-
-            if c == ' ':
-                fields.append(line[start:i])
-                start = i+1
-
-        fields.append(line[start:])
-
-        if len(fields) > 4:
-            raise ValueError('Could not parse key, too many fields({}).'
-                             .format(len(fields)))
-
-        if len(fields) < 2:
-            raise ValueError('Could not parse key, too few fields({}).'
-                             .format(len(fields)))
-
-        opt_str = None
-        comment = None
+        options, key_without_options = cls._extract_options(line)
+        fields = key_without_options.strip().split(maxsplit=2)
         if len(fields) == 2:
             type_str, data64 = fields
-        elif len(fields) == 4:
-            opt_str, type_str, data64, comment = fields
-        if len(fields) == 3:
-            # we could be missing options or the comment
-            # try to decode base64 data from either the 2nd or 3rd field
-            if fields[1].startswith('ssh-') or fields[1].startswith('ecdsa'):
-                # 2nd field is type string, there's a comment preprepended
-                opt_str, type_str, data64 = fields
-            else:
-                type_str, data64, comment = fields
+            comment = None
+        elif len(fields) == 3:
+            type_str, data64, comment = fields
+        else:
+            raise ValueError("Too many fields in key: %s"
+                            % key_without_options)
 
         data = b64decode(data64)
         key_type = next(iter_prefixed(data))
@@ -110,19 +150,6 @@ class Key(object):
             key_class = ECDSAKey
         else:
             raise ValueError('Unknown key type {}'.format(key_type))
-
-        # parse options
-        PAIR_RE = re.compile(r'([A-Za-z0-9-]+)(="[^"]*"|[^"\s,])?,')
-
-        options = OrderedDict()
-        if opt_str:
-            for k, v in PAIR_RE.findall(opt_str + ','):
-                if not v.startswith('='):
-                    options[k] = True
-                elif v.startswith('="'):
-                    options[k] = v[2:-1]
-                else:
-                    options[k] = v[1:]
 
         return key_class(b64decode(data64), comment, options=options)
 
@@ -137,8 +164,12 @@ class Key(object):
         fields = [self.type, b64encode(self.data).decode('ascii')]
 
         if self.options:
-            buf = [k if v is True else '{}="{}"'.format(k, v)
-                   for k, v in self.options.items()]
+            buf = []
+            for k, v in self.options.items():
+                if v is True: # NOT the same as 'if v:'!
+                    buf.append(k)
+                else:
+                    buf.append('%s="%s"' % (k, v.replace('"', r'\"')))
             fields.insert(0, ','.join(buf))
 
         if self.comment is not None:
