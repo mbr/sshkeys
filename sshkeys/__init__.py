@@ -85,6 +85,9 @@ class Key(object):
                         else:
                             quoted = False
                     else:
+                        if escaped:
+                            option_val += "\\"
+                            escaped = False
                         option_val += letter
                 else: # not quoted
                     if letter == ' ':
