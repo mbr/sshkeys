@@ -133,6 +133,7 @@ class Key(object):
         # "type", "data", and optionally "comment", separated by a space.
         # The comment field may contain additional spaces
         fields = key_without_options.strip().split(None, 2) # maxsplit=2
+        # note that performing n splits results in n+1 fields
         if len(fields) == 2:
             type_str, data64 = fields
             comment = None
