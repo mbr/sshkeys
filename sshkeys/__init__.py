@@ -1,4 +1,4 @@
-from binascii import hexlify
+import binascii
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from hashlib import md5
@@ -51,7 +51,7 @@ class Key(object):
 
     @property
     def readable_fingerprint(self):
-        h = hexlify(self.fingerprint).decode()
+        h = binascii.hexlify(self.fingerprint).decode()
         return ':'.join(h[i:i+2] for i in range(0, len(h), 2))
 
     @staticmethod
@@ -127,26 +127,39 @@ class Key(object):
                             option_val += letter
             else:
                 key_without_options += letter
-        return options, key_without_options
+        if key_without_options == '':
+            # certain mal-formed keys (e.g. a line not containing any spaces)
+            # will be completely swallowed up by the above parser. It's
+            # better to follow the principle of least surprize and return the
+            # original line, allowing the error to be handled later.
+            return OrderedDict({}), line.strip()
+        else:
+            return options, key_without_options
 
     @classmethod
     def from_pubkey_line(cls, line):
+        """Generate Key instance from a a string. Raise ValueError if string is
+        malformed"""
         options, key_without_options = cls._extract_options(line)
-        # the key (with options stripped out) consists of the fields
+        if key_without_options == '':
+            raise ValueError("Empty key")
+        # the key (with options stripped out) should consist of the fields
         # "type", "data", and optionally "comment", separated by a space.
         # The comment field may contain additional spaces
         fields = key_without_options.strip().split(None, 2) # maxsplit=2
-        # note that performing n splits results in n+1 fields
-        if len(fields) == 2:
+        if len(fields) == 3:
+            type_str, data64, comment = fields
+        elif len(fields) == 2:
             type_str, data64 = fields
             comment = None
-        elif len(fields) == 3:
-            type_str, data64, comment = fields
-        else:
-            raise ValueError("Too many fields in key: %s"
-                            % key_without_options)
+        else: # len(fields) <= 1
+            raise ValueError("Key has insufficient number of fields")
 
-        data = b64decode(data64)
+        try:
+            data = b64decode(data64)
+        except (binascii.Error, TypeError):
+            raise ValueError("Key contains invalid data")
+
         key_type = next(iter_prefixed(data))
 
         if key_type == b'ssh-rsa':
@@ -162,6 +175,8 @@ class Key(object):
 
     @classmethod
     def from_pubkey_file(cls, file):
+        """Generate a Key instance from a file. Raise ValueError is key is
+        malformed"""
         if hasattr(file, 'read'):
             return cls.from_pubkey_line(file.read())
 
