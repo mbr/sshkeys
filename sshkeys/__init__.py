@@ -2,7 +2,6 @@ import binascii
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from hashlib import md5
-import re
 from struct import unpack
 
 from six import byte2int
@@ -12,7 +11,7 @@ def iter_prefixed(data):
     while data:
         # get next prefix
         l = unpack('!I', data[:4])[0]
-        packet, data = data[4:4+l], data[4+l:]
+        packet, data = data[4:4 + l], data[4 + l:]
         yield packet
 
 
@@ -52,7 +51,7 @@ class Key(object):
     @property
     def readable_fingerprint(self):
         h = binascii.hexlify(self.fingerprint).decode()
-        return ':'.join(h[i:i+2] for i in range(0, len(h), 2))
+        return ':'.join(h[i:i + 2] for i in range(0, len(h), 2))
 
     @staticmethod
     def _extract_options(line):
@@ -89,12 +88,12 @@ class Key(object):
                             option_val += "\\"
                             escaped = False
                         option_val += letter
-                else: # not quoted
+                else:  # not quoted
                     if letter == ' ':
                         # end of options
                         in_options = False
-                        if (option_name in ['ssh-rsa', 'ssh-dss']
-                        or option_name.startswith('ecdsa-')):
+                        if (option_name in ['ssh-rsa', 'ssh-dss'] or
+                            option_name.startswith('ecdsa-')):
                             # what we thought was an option name was really the
                             # key type, and there are no options
                             key_without_options = option_name + " "
@@ -120,7 +119,7 @@ class Key(object):
                         in_option_name = True
                         option_name = ''
                         option_val = None
-                    else: # general unquoted letter
+                    else:  # general unquoted letter
                         if in_option_name:
                             option_name += letter
                         else:
@@ -146,13 +145,13 @@ class Key(object):
         # the key (with options stripped out) should consist of the fields
         # "type", "data", and optionally "comment", separated by a space.
         # The comment field may contain additional spaces
-        fields = key_without_options.strip().split(None, 2) # maxsplit=2
+        fields = key_without_options.strip().split(None, 2)  # maxsplit=2
         if len(fields) == 3:
             type_str, data64, comment = fields
         elif len(fields) == 2:
             type_str, data64 = fields
             comment = None
-        else: # len(fields) <= 1
+        else:  # len(fields) <= 1
             raise ValueError("Key has insufficient number of fields")
 
         try:
@@ -188,7 +187,7 @@ class Key(object):
         if self.options:
             buf = []
             for k, v in self.options.items():
-                if v is True: # NOT the same as 'if v:'!
+                if v is True:  # NOT the same as 'if v:'!
                     buf.append(k)
                 else:
                     buf.append('%s="%s"' % (k, v.replace('"', r'\"')))
@@ -205,7 +204,7 @@ class RSAKey(Key):
     def length(self):
         prefix, exp, n = [p for p in iter_prefixed(self.data)]
 
-        l = (len(n)-1) * 8
+        l = (len(n) - 1) * 8
 
         # the first bit is the sign and should always be 0
         # all bits below the highest non-0 bit are part of the modulus
