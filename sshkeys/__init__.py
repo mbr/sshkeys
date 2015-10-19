@@ -6,6 +6,8 @@ from struct import unpack
 
 from six import byte2int
 
+__version__ = '0.5.dev1'
+
 
 def iter_prefixed(data):
     while data:
